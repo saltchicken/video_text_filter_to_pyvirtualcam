@@ -1,5 +1,4 @@
 import cv2
-import os
 import numpy as np
 import pyvirtualcam
 from PIL import Image, ImageFont, ImageDraw
@@ -67,12 +66,11 @@ if __name__ == "__main__":
     # cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
     # cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 360)
 
-
     queue_input = multiprocessing.Queue()
     queue_output = multiprocessing.Queue()
 
     available_cores = multiprocessing.cpu_count()
-    process_cores = 14 if available_cores >= 16 else available_cores
+    process_cores = 11 if available_cores >= 16 else available_cores - 3
     assert process_cores >= 4
     for i in range(process_cores):
         p = multiprocessing.Process(target=worker, args=(queue_input, queue_output))
