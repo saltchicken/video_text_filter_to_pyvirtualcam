@@ -5,9 +5,6 @@ import pyvirtualcam
 from PIL import Image, ImageFont, ImageDraw
 import multiprocessing
 
-#Remove this. Only for testing
-import matplotlib.pyplot as plt
-
 ########################################################################
 # SETTINGS #
 WIDTH = 1920
@@ -16,6 +13,13 @@ FPS = 60
 
 RESIZED_WIDTH = 160 # 240, 112, 80
 RESIZED_HEIGHT = 90 # 135, 63, 45
+
+ROW_SPACING = HEIGHT / RESIZED_HEIGHT
+
+LOWER_BLUE = np.array([100, 0, 0])
+UPPER_BLUE = np.array([255, 100, 120])
+
+CAP_INPUT = 0 # 0 for camera
 ########################################################################
 
 def convert_row_to_ascii(row):
@@ -29,24 +33,21 @@ def convert_to_ascii(input_grays):
 def worker(queue_input, queue_output):
     monospace = ImageFont.truetype("./Fonts/ANDALEMO.ttf",20)
     frame_background = np.zeros((HEIGHT, WIDTH, 3), np.uint8)
-    # TODO: Add graceful exit when Ctrl + C is pressed
     while True:
         reduced = queue_input.get()
         if reduced is None:
-            # Poison pill to signal the worker process to exit.
+            # Poison pill
             break
         im_p = Image.fromarray(frame_background)
-
-        # Get a drawing context
         draw = ImageDraw.Draw(im_p)
         
-        ## TODO Optimize indexing.
         # Plug in reduced resolution numpy array for ascii converter func
         converted = convert_to_ascii(reduced)    
         for index, row in enumerate(converted):
-            draw.text((0, index * (HEIGHT / RESIZED_HEIGHT)),''.join(row),(0,255,0),font=monospace)
+            # TODO: This can be improved with multiline drawing
+            draw.text((0, index * (ROW_SPACING)),''.join(row),(0,255,0),font=monospace)
 
-        # Convert back to OpenCV image and save
+        # Convert back to OpenCV image
         result_o = np.array(im_p)
         queue_output.put(result_o)
         
@@ -60,11 +61,9 @@ def sender(queue_output):
                 break
             cam.send(result_o)
     
-    
 if __name__ == "__main__":
-    # print(f"Number of cores: {multiprocessing.cpu_count()}")
     ## TODO Optimize camera resolution.
-    cap = cv2.VideoCapture(0)
+    cap = cv2.VideoCapture(CAP_INPUT)
     # cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
     # cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 360)
 
@@ -72,33 +71,30 @@ if __name__ == "__main__":
     queue_input = multiprocessing.Queue()
     queue_output = multiprocessing.Queue()
 
-    for i in range(16):
+    available_cores = multiprocessing.cpu_count()
+    process_cores = 14 if available_cores >= 16 else available_cores
+    assert process_cores >= 4
+    for i in range(process_cores):
         p = multiprocessing.Process(target=worker, args=(queue_input, queue_output))
         p.start()
         
     process = multiprocessing.Process(target=sender, args=(queue_output,))
     process.start()
     
-    lower_blue = np.array([100, 0, 0])
-    upper_blue = np.array([255, 100, 120])
-    
     while(cv2.waitKey(1) & 0xFF != ord('q')):
         try:
             ret, frame = cap.read()
             image = cv2.resize(frame, (RESIZED_WIDTH, RESIZED_HEIGHT))
-            mask = cv2.inRange(image, lower_blue, upper_blue)
+            mask = cv2.inRange(image, LOWER_BLUE, UPPER_BLUE)
             image[mask != 0] = [0, 0, 0]
             reduced = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-            # plt.imshow(image_copy)
-            # # plt.imshow(mask, cmap='gray')
-            # plt.show()         
             
             queue_input.put(reduced)
         except Exception as e:
             print(e)
             break
         
-    for i in range(16):
+    for i in range(process_cores):
         queue_input.put(None)
     queue_output.put(None)
     cap.release()
