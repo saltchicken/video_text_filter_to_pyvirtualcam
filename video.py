@@ -2,10 +2,8 @@ import cv2
 import os
 import numpy as np
 import pyvirtualcam
-# Replace PIL with opencv
 from PIL import Image, ImageFont, ImageDraw
 import multiprocessing
-import time, sys
 
 #Remove this. Only for testing
 import matplotlib.pyplot as plt
@@ -66,15 +64,13 @@ def sender(queue_output):
 if __name__ == "__main__":
     # print(f"Number of cores: {multiprocessing.cpu_count()}")
     ## TODO Optimize camera resolution.
-    cap = cv2.VideoCapture("C:/Users/johne/Desktop/sample3.mkv")
+    cap = cv2.VideoCapture(0)
     # cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
     # cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 360)
 
 
     queue_input = multiprocessing.Queue()
     queue_output = multiprocessing.Queue()
-    
-    pool = multiprocessing.Pool(8)
 
     for i in range(16):
         p = multiprocessing.Process(target=worker, args=(queue_input, queue_output))
@@ -83,35 +79,19 @@ if __name__ == "__main__":
     process = multiprocessing.Process(target=sender, args=(queue_output,))
     process.start()
     
+    lower_blue = np.array([100, 0, 0])
+    upper_blue = np.array([255, 100, 120])
+    
     while(cv2.waitKey(1) & 0xFF != ord('q')):
         try:
-
-            # Get image data
             ret, frame = cap.read()
-            if not ret:
-                cap = cv2.VideoCapture("C:/Users/johne/Desktop/sample3.mkv")
-                continue
-            # plt.imshow(frame)
-            # # plt.imshow(mask, cmap='gray')
-            # plt.show()
             image = cv2.resize(frame, (RESIZED_WIDTH, RESIZED_HEIGHT))
-            lower_blue = np.array([100, 0, 0])     ##[R value, G value, B value]
-            upper_blue = np.array([255, 100, 120])
             mask = cv2.inRange(image, lower_blue, upper_blue)
-            
             image[mask != 0] = [0, 0, 0]
             reduced = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
             # plt.imshow(image_copy)
             # # plt.imshow(mask, cmap='gray')
-            # plt.show()
-
-            # Convert data to grayscale
-            # gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-
-            ## TODO Optimize dimensions
-            # Reduce grayscale array to proper resolution
-            # reduced = cv2.resize(gray, (RESIZED_WIDTH, RESIZED_HEIGHT))
-            
+            # plt.show()         
             
             queue_input.put(reduced)
         except Exception as e:
