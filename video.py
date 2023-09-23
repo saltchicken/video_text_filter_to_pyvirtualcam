@@ -7,9 +7,12 @@ import multiprocessing
 
 ########################################################################
 # SETTINGS #
-WIDTH = 1920//2
-HEIGHT = 1080//2
+WIDTH = 1920
+HEIGHT = 1080
 FPS = 60
+
+RESIZED_WIDTH = 160 # 240, 112, 80
+RESIZED_HEIGHT = 90 # 135, 63, 45
 ########################################################################
 
 def convert_row_to_ascii(row):
@@ -21,8 +24,8 @@ def convert_to_ascii(input_grays):
     return tuple(convert_row_to_ascii(row) for row in input_grays)
 
 def worker(queue_input, queue_output):
-    monospace = ImageFont.truetype("./Fonts/ANDALEMO.ttf",16)
-    frame_background = np.zeros((HEIGHT, WIDTH, 3), np.uint8) 
+    monospace = ImageFont.truetype("./Fonts/ANDALEMO.ttf",20)
+    frame_background = np.zeros((HEIGHT, WIDTH, 3), np.uint8)
     while True:
         reduced = queue_input.get()
         if reduced is None:
@@ -37,7 +40,7 @@ def worker(queue_input, queue_output):
         # Plug in reduced resolution numpy array for ascii converter func
         converted = convert_to_ascii(reduced)    
         for index, row in enumerate(converted):
-            draw.text((0, index * 12),''.join(row),(255,255,255),font=monospace)
+            draw.text((0, index * (HEIGHT / RESIZED_HEIGHT)),''.join(row),(0,255,0),font=monospace)
 
         # Convert back to OpenCV image and save
         result_o = np.array(im_p)
@@ -55,6 +58,7 @@ def sender(queue_output):
     
     
 if __name__ == "__main__":
+    # print(f"Number of cores: {multiprocessing.cpu_count()}")
     ## TODO Optimize camera resolution.
     cap = cv2.VideoCapture(0)
     # cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
@@ -66,18 +70,12 @@ if __name__ == "__main__":
     
     pool = multiprocessing.Pool(8)
 
-    for i in range(8):
+    for i in range(16):
         p = multiprocessing.Process(target=worker, args=(queue_input, queue_output))
         p.start()
         
     process = multiprocessing.Process(target=sender, args=(queue_output,))
     process.start()
-
-    ## Determine proper font size
-    ## TODO Use textSize to optimize dimensions for ascii output
-    # text = "Test"
-    # # textSize = monospace.getsize(text)
-    # textSize = 8
     
     while(cv2.waitKey(1) & 0xFF != ord('q')):
 
@@ -89,12 +87,9 @@ if __name__ == "__main__":
 
         ## TODO Optimize dimensions
         # Reduce grayscale array to proper resolution
-        # reduced = cv2.resize(gray, (160, 90))
-        # reduced = cv2.resize(gray, (112, 63))
-        reduced = cv2.resize(gray, (80, 45))
+        reduced = cv2.resize(gray, (RESIZED_WIDTH, RESIZED_HEIGHT))
         queue_input.put(reduced)
-        # Make PIL image
 
-# TODO: Insert a proper break to the while loop so that these following functions actually run. Then send 8 (number of pool) None to queue_input and 1 to queue_output
+# TODO: Insert a proper break to the while loop so that these following functions actually run. Then send 16 (number of pool) None to queue_input and 1 to queue_output
     cap.release()
     cv2.destroyAllWindows()
