@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 import pyvirtualcam
 from PIL import Image, ImageFont, ImageDraw
-import multiprocessing
+import multiprocessing, time
 
 ########################################################################
 # SETTINGS #
@@ -10,8 +10,9 @@ WIDTH = 1920
 HEIGHT = 1080
 FPS = 60
 
-RESIZED_WIDTH = 160 # 240, 112, 80
-RESIZED_HEIGHT = 90 # 135, 63, 45
+RESIZED_WIDTH = 240     # 256, 240, 160, 112, 80
+RESIZED_HEIGHT = 135     # 144, 135, 90, 63, 45
+FONT_SIZE = 18        # 14, 14, 20, 28, 40
 
 ROW_SPACING = HEIGHT / RESIZED_HEIGHT
 
@@ -30,7 +31,7 @@ def convert_to_ascii(input_grays):
     return tuple(convert_row_to_ascii(row) for row in input_grays)
 
 def worker(queue_input, queue_output):
-    monospace = ImageFont.truetype("./Fonts/ANDALEMO.ttf",20)
+    monospace = ImageFont.truetype("./Fonts/ANDALEMO.ttf", FONT_SIZE)
     frame_background = np.zeros((HEIGHT, WIDTH, 3), np.uint8)
     while True:
         reduced = queue_input.get()
@@ -59,29 +60,35 @@ def sender(queue_output):
                 # Poison pill
                 break
             cam.send(result_o)
-    
-if __name__ == "__main__":
-    ## TODO Optimize camera resolution.
-    cap = cv2.VideoCapture(CAP_INPUT)
-    # cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-    # cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 360)
 
+if __name__ == "__main__":
+    cap = cv2.VideoCapture(CAP_INPUT)
+    cap_width  = cap.get(3)
+    cap_height = cap.get(4)
+    
     queue_input = multiprocessing.Queue()
     queue_output = multiprocessing.Queue()
+    
+    process = multiprocessing.Process(target=sender, args=(queue_output,))
+    process.start()
 
     available_cores = multiprocessing.cpu_count()
-    process_cores = 11 if available_cores >= 16 else available_cores - 3
+    process_cores = 21 if available_cores >= 24 else available_cores - 3
     assert process_cores >= 4
     for i in range(process_cores):
         p = multiprocessing.Process(target=worker, args=(queue_input, queue_output))
         p.start()
-        
-    process = multiprocessing.Process(target=sender, args=(queue_output,))
-    process.start()
     
+    # TODO: Gives time for process to load up. This prevents the hyper FPS when starting from video. This can
+    # be resolved by having the process running as a standalone service.
+    time.sleep(2)
     while(cv2.waitKey(1) & 0xFF != ord('q')):
         try:
             ret, frame = cap.read()
+            # # This will loop the source if reading from a file.
+            # if not ret:
+            #     cap = cv2.VideoCapture(CAP_INPUT)
+            #     continue
             image = cv2.resize(frame, (RESIZED_WIDTH, RESIZED_HEIGHT))
             mask = cv2.inRange(image, LOWER_BLUE, UPPER_BLUE)
             image[mask != 0] = [0, 0, 0]
