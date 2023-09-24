@@ -31,13 +31,13 @@ def sender():
         puller.bind("tcp://*:5558")
         while True:
             try:
-                # try:
-                #      result_o = puller.recv(flags=zmq.NOBLOCK)
-                # except zmq.Again as e:
-                #      continue
-                # except KeyboardInterrupt:
-                #      break
-                start_time = time.time_ns()
+                try:
+                     result_o = puller.recv(flags=zmq.NOBLOCK)
+                except zmq.Again as e:
+                     continue
+                except KeyboardInterrupt:
+                     break
+                # start_time = time.time_ns()
                 result_o = puller.recv()
                 
                 deserialized_image = np.frombuffer(result_o, dtype=np.uint8)
