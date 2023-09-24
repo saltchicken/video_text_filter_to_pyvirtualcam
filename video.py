@@ -33,7 +33,7 @@ def convert_to_ascii(input_grays):
 def worker(queue_input, queue_output):
     monospace = ImageFont.truetype("./Fonts/ANDALEMO.ttf", FONT_SIZE)
     _, top, _, bottom = monospace.getbbox(" .',:;clxokXdO0KN")
-    SPACING = ROW_SPACING - (bottom - top) - FONT_ALPHA
+    # SPACING = ROW_SPACING - (bottom - top) - FONT_ALPHA
     frame_background = np.zeros((HEIGHT, WIDTH, 3), np.uint8)
     while True:
         reduced = queue_input.get()
@@ -53,7 +53,6 @@ def worker(queue_input, queue_output):
         
         
         for index, row in enumerate(converted):
-            # TODO: This can be improved with multiline drawing
             draw.text((0, index * (ROW_SPACING)),''.join(row),(0,255,0),font=monospace)
             
         # Convert back to OpenCV image
