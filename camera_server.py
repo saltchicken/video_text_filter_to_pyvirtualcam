@@ -20,7 +20,7 @@ ROW_SPACING = HEIGHT / RESIZED_HEIGHT
 LOWER_BLUE = np.array([100, 0, 0])
 UPPER_BLUE = np.array([255, 100, 120])
 
-CAP_INPUT = "C:/Users/johne/Desktop/sample2.mkv" # 0 for camera
+CAP_INPUT = 0 # 0 for camera
 ########################################################################
         
 def sender():
@@ -28,17 +28,16 @@ def sender():
         print(f'Using virtual camera: {cam.device}')
         context = zmq.Context()
         puller = context.socket(zmq.PULL)
-        puller.bind("tcp://127.0.0.1:5558")
+        puller.bind("tcp://*:5558")
         while True:
             try:
-                # try:
-                #     result_o = puller.recv(flags=zmq.NOBLOCK)
-                # except zmq.Again as e:
-                #     time.sleep(0.01)
-                #     continue
-                # except KeyboardInterrupt:
-                #     break
-                result_o = puller.recv()
+                try:
+                     result_o = puller.recv(flags=zmq.NOBLOCK)
+                except zmq.Again as e:
+                     continue
+                except KeyboardInterrupt:
+                     break
+                # result_o = puller.recv()
                 deserialized_image = np.frombuffer(result_o, dtype=np.uint8)
                 deserialized_image = deserialized_image.reshape(HEIGHT, WIDTH, 3)
                 cam.send(deserialized_image)
@@ -49,6 +48,7 @@ if __name__ == "__main__":
     context = zmq.Context()
     pusher = context.socket(zmq.PUSH)
     pusher.bind("tcp://*:5559")  # Publisher binds to a specific address and port
+    # pusher.setsockopt(zmq.SNDHWM, 21)
     
     cap = cv2.VideoCapture(CAP_INPUT)
     cap_width  = cap.get(3)
@@ -65,11 +65,11 @@ if __name__ == "__main__":
         try:
             ret, frame = cap.read()
             # This will loop the source if reading from a file.
-            if not ret:
-                cap = cv2.VideoCapture(CAP_INPUT)
-                continue
-            if frame is None:
-                continue
+            # if not ret:
+            #    cap = cv2.VideoCapture(CAP_INPUT)
+            #    continue
+            # if frame is None:
+            #    continue
             
             image = cv2.resize(frame, (RESIZED_WIDTH, RESIZED_HEIGHT))
             mask = cv2.inRange(image, LOWER_BLUE, UPPER_BLUE)

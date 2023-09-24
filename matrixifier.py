@@ -38,19 +38,21 @@ def worker():
     frame_background = np.zeros((HEIGHT, WIDTH, 3), np.uint8)
     context = zmq.Context()
     puller = context.socket(zmq.PULL)
-    puller.connect("tcp://127.0.0.1:5559")
+    puller.connect("tcp://192.168.1.10:5559")
     context = zmq.Context()
     pusher = context.socket(zmq.PUSH)
-    pusher.connect("tcp://127.0.0.1:5558") 
+    pusher.connect("tcp://192.168.1.10:5558")
+    pusher.setsockopt(zmq.SNDHWM, 1) 
     while True:
         try:
-            # try:
-            #     reduced = puller.recv(flags=zmq.NOBLOCK)
-            # except zmq.Again as e:
-            #     continue
-            # except KeyboardInterrupt:
-            #     break
-            reduced = puller.recv()
+            start_time = time.time_ns()
+            try:
+                reduced = puller.recv(flags=zmq.NOBLOCK)
+            except zmq.Again as e:
+                continue
+            except KeyboardInterrupt:
+                break
+            # reduced = puller.recv()
             deserialized_image = np.frombuffer(reduced, dtype=np.uint8)
             deserialized_image = deserialized_image.reshape(RESIZED_HEIGHT, RESIZED_WIDTH)
 
@@ -75,7 +77,9 @@ def worker():
             result_o = np.array(im_p)
             received_data = np.frombuffer(result_o, dtype=np.int32)
             serialized_bytes = received_data.tobytes()
-            pusher.send(serialized_bytes, flags=zmq.NOBLOCK)
+            pusher.send(serialized_bytes, zmq.NOBLOCK)
+            end_time = time.time_ns()
+            print(end_time - start_time)
 
         except Exception as e:
             print(e)
@@ -83,7 +87,8 @@ def worker():
 if __name__ == "__main__":
     
     available_cores = multiprocessing.cpu_count()
-    process_cores = 21 if available_cores >= 24 else available_cores - 3
+    # process_cores = 21 if available_cores >= 24 else available_cores - 3
+    process_cores = 4
     assert process_cores >= 4
     for i in range(process_cores):
         p = multiprocessing.Process(target=worker)
