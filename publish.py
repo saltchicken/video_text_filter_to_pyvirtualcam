@@ -2,7 +2,7 @@ import zmq
 import time
 
 context = zmq.Context()
-publisher = context.socket(zmq.PUB)
+publisher = context.socket(zmq.PUSH)
 publisher.bind("tcp://*:5555")  # Publisher binds to a specific address and port
 
 while True:
