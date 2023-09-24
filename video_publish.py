@@ -129,11 +129,11 @@ if __name__ == "__main__":
     while(cv2.waitKey(1) & 0xFF != ord('q')):
         try:
             ret, frame = cap.read()
-            if frame is None:
-                continue
             # This will loop the source if reading from a file.
             if not ret:
                 cap = cv2.VideoCapture(CAP_INPUT)
+                continue
+            if frame is None:
                 continue
             
             image = cv2.resize(frame, (RESIZED_WIDTH, RESIZED_HEIGHT))
