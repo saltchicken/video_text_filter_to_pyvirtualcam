@@ -12,8 +12,8 @@ FPS = 60
 
 RESIZED_WIDTH = 240     # 256, 240, 160, 112, 80
 RESIZED_HEIGHT = 135     # 144, 135, 90, 63, 45
-FONT_SIZE = 18        # 14, 14, 20, 28, 40
-
+FONT_SIZE = 14      # 14, 14, 20, 28, 40
+# FONT_ALPHA = 1         # 1, 1, 2, 3, 3
 ROW_SPACING = HEIGHT / RESIZED_HEIGHT
 
 LOWER_BLUE = np.array([100, 0, 0])
@@ -32,6 +32,8 @@ def convert_to_ascii(input_grays):
 
 def worker(queue_input, queue_output):
     monospace = ImageFont.truetype("./Fonts/ANDALEMO.ttf", FONT_SIZE)
+    _, top, _, bottom = monospace.getbbox(" .',:;clxokXdO0KN")
+    SPACING = ROW_SPACING - (bottom - top) - FONT_ALPHA
     frame_background = np.zeros((HEIGHT, WIDTH, 3), np.uint8)
     while True:
         reduced = queue_input.get()
@@ -42,11 +44,18 @@ def worker(queue_input, queue_output):
         draw = ImageDraw.Draw(im_p)
         
         # Plug in reduced resolution numpy array for ascii converter func
-        converted = convert_to_ascii(reduced)    
+        converted = convert_to_ascii(reduced)
+        
+        # multiline_string = ''
+        # for row in converted:
+        #     multiline_string += ''.join(row) + '\n'
+        # draw.multiline_text((0,0), multiline_string, (0,255,0), spacing=SPACING, font=monospace)
+        
+        
         for index, row in enumerate(converted):
             # TODO: This can be improved with multiline drawing
             draw.text((0, index * (ROW_SPACING)),''.join(row),(0,255,0),font=monospace)
-
+            
         # Convert back to OpenCV image
         result_o = np.array(im_p)
         queue_output.put(result_o)
@@ -89,6 +98,7 @@ if __name__ == "__main__":
             # if not ret:
             #     cap = cv2.VideoCapture(CAP_INPUT)
             #     continue
+            
             image = cv2.resize(frame, (RESIZED_WIDTH, RESIZED_HEIGHT))
             mask = cv2.inRange(image, LOWER_BLUE, UPPER_BLUE)
             image[mask != 0] = [0, 0, 0]
