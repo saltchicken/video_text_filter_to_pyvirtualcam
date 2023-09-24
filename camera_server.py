@@ -37,13 +37,15 @@ def sender():
                 #      continue
                 # except KeyboardInterrupt:
                 #      break
-                result_o = puller.recv()
                 start_time = time.time_ns()
+                result_o = puller.recv()
+                
                 deserialized_image = np.frombuffer(result_o, dtype=np.uint8)
                 deserialized_image = deserialized_image.reshape(HEIGHT, WIDTH, 3)
+                
+                cam.send(deserialized_image)
                 end_time = time.time_ns()
                 print(f'Sender took {(end_time - start_time) / 1000000} ms')
-                cam.send(deserialized_image)
             except Exception as e:
                 print(e)
 
