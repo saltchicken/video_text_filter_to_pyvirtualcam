@@ -77,12 +77,15 @@ def worker():
             result_o = np.array(im_p)
             received_data = np.frombuffer(result_o, dtype=np.int32)
             serialized_bytes = received_data.tobytes()
-            pusher.send(serialized_bytes, zmq.NOBLOCK)
+            try:
+                pusher.send(serialized_bytes, zmq.NOBLOCK)
+            except Exception as e:
+                print(f'Internal: {e}')
             end_time = time.time_ns()
             print(end_time - start_time)
 
         except Exception as e:
-            print(e)
+            print(f'Sender Error: {e}')
 
 if __name__ == "__main__":
     
