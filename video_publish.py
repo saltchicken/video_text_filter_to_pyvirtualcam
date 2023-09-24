@@ -51,7 +51,7 @@ def worker(queue_input, queue_output):
             except KeyboardInterrupt:
                 break
             deserialized_image = np.frombuffer(reduced, dtype=np.uint8)
-            deserialized_image = deserialized_image.reshape(135, 240)
+            deserialized_image = deserialized_image.reshape(RESIZED_HEIGHT, RESIZED_WIDTH)
 
             im_p = Image.fromarray(frame_background)
             draw = ImageDraw.Draw(im_p)
