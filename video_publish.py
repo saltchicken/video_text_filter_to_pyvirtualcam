@@ -20,7 +20,7 @@ ROW_SPACING = HEIGHT / RESIZED_HEIGHT
 LOWER_BLUE = np.array([100, 0, 0])
 UPPER_BLUE = np.array([255, 100, 120])
 
-CAP_INPUT = 0 # 0 for camera
+CAP_INPUT = "C:/Users/johne/Desktop/sample2.mkv" # 0 for camera
 ########################################################################
 
 def convert_row_to_ascii(row):
@@ -44,12 +44,13 @@ def worker(queue_input, queue_output):
     pusher.connect("tcp://127.0.0.1:5558") 
     while True:
         try:
-            try:
-                reduced = puller.recv(flags=zmq.NOBLOCK)
-            except zmq.Again as e:
-                continue
-            except KeyboardInterrupt:
-                break
+            # try:
+            #     reduced = puller.recv(flags=zmq.NOBLOCK)
+            # except zmq.Again as e:
+            #     continue
+            # except KeyboardInterrupt:
+            #     break
+            reduced = puller.recv()
             deserialized_image = np.frombuffer(reduced, dtype=np.uint8)
             deserialized_image = deserialized_image.reshape(RESIZED_HEIGHT, RESIZED_WIDTH)
 
@@ -87,13 +88,14 @@ def sender(queue_output):
         puller.bind("tcp://127.0.0.1:5558")
         while True:
             try:
-                try:
-                    result_o = puller.recv(flags=zmq.NOBLOCK)
-                except zmq.Again as e:
-                    time.sleep(0.01)
-                    continue
-                except KeyboardInterrupt:
-                    break
+                # try:
+                #     result_o = puller.recv(flags=zmq.NOBLOCK)
+                # except zmq.Again as e:
+                #     time.sleep(0.01)
+                #     continue
+                # except KeyboardInterrupt:
+                #     break
+                result_o = puller.recv()
                 deserialized_image = np.frombuffer(result_o, dtype=np.uint8)
                 deserialized_image = deserialized_image.reshape(HEIGHT, WIDTH, 3)
                 cam.send(deserialized_image)
