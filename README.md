@@ -1,3 +1,3 @@
-#In DEVELOPMENT
+This is here for archival purposes.
 
-Working but needs to be optimized and provide set up instructions.
+Replaced by https://github.com/saltchicken/matrixifier
