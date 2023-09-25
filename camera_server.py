@@ -7,12 +7,12 @@ import zmq
 
 ########################################################################
 # SETTINGS #
-WIDTH = 1920
-HEIGHT = 1080
+WIDTH = 1920 // 2
+HEIGHT = 1080 // 2
 FPS = 60
 
-RESIZED_WIDTH = 240     # 256, 240, 160, 112, 80
-RESIZED_HEIGHT = 135     # 144, 135, 90, 63, 45
+RESIZED_WIDTH = 160     # 256, 240, 160, 112, 80
+RESIZED_HEIGHT = 90     # 144, 135, 90, 63, 45
 FONT_SIZE = 14      # 14, 14, 20, 28, 40
 # FONT_ALPHA = 1         # 1, 1, 2, 3, 3
 ROW_SPACING = HEIGHT / RESIZED_HEIGHT
@@ -37,15 +37,12 @@ def sender():
                      continue
                 except KeyboardInterrupt:
                      break
-                start_time = time.time_ns()
                 # result_o = puller.recv()
                 
                 deserialized_image = np.frombuffer(result_o, dtype=np.uint8)
                 deserialized_image = deserialized_image.reshape(HEIGHT, WIDTH, 3)
                 
                 cam.send(deserialized_image)
-                end_time = time.time_ns()
-                print(f'Sender took {(end_time - start_time) / 1000000} ms')
             except Exception as e:
                 print(e)
 
@@ -80,16 +77,10 @@ if __name__ == "__main__":
             mask = cv2.inRange(image, LOWER_BLUE, UPPER_BLUE)
             image[mask != 0] = [0, 0, 0]
             reduced = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-            # print("shape!!!!!!!!!!!!!!!!!!!!!:", reduced.shape)
             serialized_bytes = reduced.tobytes()
             pusher.send(serialized_bytes)
-            # queue_input.put(reduced)
         except Exception as e:
             print(e)
             break
-        
-    # for i in range(process_cores):
-    #     queue_input.put(None)
-    # queue_output.put(None)
     cap.release()
     cv2.destroyAllWindows()

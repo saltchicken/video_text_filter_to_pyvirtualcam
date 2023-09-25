@@ -7,13 +7,14 @@ import zmq
 
 ########################################################################
 # SETTINGS #
-WIDTH = 1920
-HEIGHT = 1080
+WIDTH = 1920 // 2
+HEIGHT = 1080 // 2
 FPS = 60
 
-RESIZED_WIDTH = 240     # 256, 240, 160, 112, 80
-RESIZED_HEIGHT = 135     # 144, 135, 90, 63, 45
-FONT_SIZE = 14      # 14, 14, 20, 28, 40
+# TODO: Fix font sizes due to reduced resolution
+RESIZED_WIDTH = 160     # 256, 240, 160, 112, 80
+RESIZED_HEIGHT = 90     # 144, 135, 90, 63, 45
+FONT_SIZE = 8      # 14, 14, 20, 28, 40
 # FONT_ALPHA = 1         # 1, 1, 2, 3, 3
 ROW_SPACING = HEIGHT / RESIZED_HEIGHT
 
@@ -49,6 +50,7 @@ def worker():
             try:
                 reduced = puller.recv(flags=zmq.NOBLOCK)
             except zmq.Again as e:
+                time.sleep(0.01)
                 continue
             except KeyboardInterrupt:
                 break
@@ -77,11 +79,10 @@ def worker():
             result_o = np.array(im_p)
             received_data = np.frombuffer(result_o, dtype=np.int32)
             serialized_bytes = received_data.tobytes()
-            # try:
-                # pusher.send(serialized_bytes, zmq.NOBLOCK)
-            # except Exception as e:
-            #     print(f'Internal: {e}')
-            pusher.send(serialized_bytes)
+            try:
+                pusher.send(serialized_bytes, zmq.NOBLOCK)
+            except Exception as e:
+                print(f'Internal: {e}')
             end_time = time.time_ns()
             print(end_time - start_time)
 
@@ -92,7 +93,7 @@ if __name__ == "__main__":
     
     available_cores = multiprocessing.cpu_count()
     # process_cores = 21 if available_cores >= 24 else available_cores - 3
-    process_cores = 4
+    process_cores = 8
     assert process_cores >= 4
     for i in range(process_cores):
         p = multiprocessing.Process(target=worker)
