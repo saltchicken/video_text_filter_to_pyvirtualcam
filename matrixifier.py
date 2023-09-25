@@ -12,9 +12,9 @@ HEIGHT = 1080 // 2
 FPS = 60
 
 # TODO: Fix font sizes due to reduced resolution
-RESIZED_WIDTH = 160     # 256, 240, 160, 112, 80
-RESIZED_HEIGHT = 90     # 144, 135, 90, 63, 45
-FONT_SIZE = 8      # 14, 14, 20, 28, 40
+RESIZED_WIDTH = 240     # 256, 240, 160, 112, 80
+RESIZED_HEIGHT = 135     # 144, 135, 90, 63, 45
+FONT_SIZE = 6      # 14, 14, 20, 28, 40
 # FONT_ALPHA = 1         # 1, 1, 2, 3, 3
 ROW_SPACING = HEIGHT / RESIZED_HEIGHT
 
@@ -93,7 +93,7 @@ if __name__ == "__main__":
     
     available_cores = multiprocessing.cpu_count()
     # process_cores = 21 if available_cores >= 24 else available_cores - 3
-    process_cores = 8
+    process_cores = 6
     assert process_cores >= 4
     for i in range(process_cores):
         p = multiprocessing.Process(target=worker)
